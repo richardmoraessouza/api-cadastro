@@ -162,12 +162,49 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS settings
+# Configuração base para desenvolvimento
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Vite default port
     "http://127.0.0.1:5173",
 ]
 
+# Se estiver em produção (Render), adiciona GitHub Pages
+if is_render:
+    CORS_ALLOWED_ORIGINS.extend([
+        "https://richardmoraessouza.github.io",  # Seu GitHub Pages específico
+        "https://*.github.io",  # Qualquer subdomínio do GitHub Pages
+        "https://github.io",    # GitHub Pages principal
+    ])
+
+# Permite qualquer origem do GitHub Pages usando regex
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.github\.io$",  # Qualquer subdomínio .github.io
+]
+
 CORS_ALLOW_CREDENTIALS = True
+
+# Headers permitidos
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+# Métodos permitidos
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 # Configuração de logging para debug do banco de dados
 LOGGING = {
