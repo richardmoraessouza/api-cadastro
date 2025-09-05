@@ -57,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'backend.database_fallback.DatabaseFallbackMiddleware',  # Fallback MySQL -> SQLite
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -78,18 +79,48 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'react'),   
-        'USER': os.environ.get('DB_USER', 'root'),           
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'richa123'),  
-        'HOST': os.environ.get('DB_HOST', 'localhost'),      
-        'PORT': os.environ.get('DB_PORT', '3306'),           
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+# Configuração do banco de dados
+# MySQL como principal, SQLite como fallback automático
+
+# Detecta se está no Render (produção)
+is_render = os.environ.get('RENDER') or os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+
+# Configuração principal - sempre tenta MySQL primeiro
+if is_render:
+    # Produção no Render
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('DB_NAME', 'api_cadastro'),   
+            'USER': os.environ.get('DB_USER', 'root'),           
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),  
+            'HOST': os.environ.get('DB_HOST', 'localhost'),      
+            'PORT': os.environ.get('DB_PORT', '3306'),           
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+            }
         }
     }
+else:
+    # Desenvolvimento local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('DB_NAME', 'react'),   
+            'USER': os.environ.get('DB_USER', 'root'),           
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'richa123'),  
+            'HOST': os.environ.get('DB_HOST', 'localhost'),      
+            'PORT': os.environ.get('DB_PORT', '3306'),           
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+            }
+        }
+    }
+
+# Configuração de fallback para SQLite
+DATABASES['sqlite_fallback'] = {
+    'ENGINE': 'django.db.backends.sqlite3',
+    'NAME': BASE_DIR / 'db.sqlite3',
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -137,3 +168,21 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Configuração de logging para debug do banco de dados
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'backend.database_fallback': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
